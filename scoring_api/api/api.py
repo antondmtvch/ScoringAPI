@@ -81,7 +81,7 @@ class ArgumentsField:
     @value.setter
     def value(self, value):
         if not isinstance(value, dict):
-            raise TypeError(f'{self.__class__.__name__} must be str, not {value.__class__.__name__}')
+            raise TypeError(f'{self.__class__.__name__} must be dict, not {value.__class__.__name__}')
         self._value = value
 
 
@@ -128,7 +128,7 @@ class PhoneField:
     @value.setter
     def value(self, value):
         if not isinstance(value, (str, int)):
-            raise TypeError(f'{self.__class__.__name__} must be str, not {value.__class__.__name__}')
+            raise TypeError(f'{self.__class__.__name__} must be str or int, not {value.__class__.__name__}')
         elif not re.match(self.pattern, str(value)):
             raise ValueError(f'{value} is not valid phone number')
         self._value = value
@@ -163,7 +163,7 @@ class GenderField:
     @value.setter
     def value(self, value):
         if not isinstance(value, int):
-            raise TypeError(f'{self.__class__.__name__} must be str, not {value.__class__.__name__}')
+            raise TypeError(f'{self.__class__.__name__} must be itn, not {value.__class__.__name__}')
         elif value not in GENDERS.keys():
             raise ValueError(f'{self.__class__.__name__} value must be 0 or 1 or 2, not {value}')
         self._value = value
