@@ -1,3 +1,4 @@
+import re
 import abc
 import json
 import datetime
@@ -35,7 +36,28 @@ GENDERS = {
 
 
 class CharField:
-    pass
+    def __init__(self, required, nullable):
+        self._value = None
+        self._required = required
+        self._nullable = nullable
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def required(self):
+        return self._required
+
+    @property
+    def nullable(self):
+        return self._nullable
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, str):
+            raise TypeError(f'{self.__class__.__name__} value must be str, not {value.__class__.__name__}')
+        self._value = value
 
 
 class ArgumentsField:
