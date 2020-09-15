@@ -163,7 +163,7 @@ class GenderField:
     @value.setter
     def value(self, value):
         if not isinstance(value, int):
-            raise TypeError(f'{self.__class__.__name__} must be itn, not {value.__class__.__name__}')
+            raise TypeError(f'{self.__class__.__name__} must be int, not {value.__class__.__name__}')
         elif value not in GENDERS.keys():
             raise ValueError(f'{self.__class__.__name__} value must be 0 or 1 or 2, not {value}')
         self._value = value
