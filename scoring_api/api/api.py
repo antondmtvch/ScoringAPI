@@ -170,7 +170,25 @@ class GenderField:
 
 
 class ClientIDsField:
-    pass
+    def __init__(self, required):
+        self._value = None
+        self._required = required
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def required(self):
+        return self._required
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, list):
+            raise TypeError(f'{self.__class__.__name__} must be list, not {value.__class__.__name__}')
+        elif not all(map(lambda x: isinstance(x, int), value)):
+            raise TypeError(f'{self.__class__.__name__} must contains only int types')
+        self._value = value
 
 
 class ClientsInterestsRequest:
