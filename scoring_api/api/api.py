@@ -6,7 +6,7 @@ import logging
 import hashlib
 import uuid
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from optparse import OptionParser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -162,8 +162,23 @@ class DateField:
         self._value = value
 
 
-class BirthDayField:
-    pass
+class BirthDayField(DateField):
+    def __init__(self, required, nullable):
+        super().__init__(required, nullable)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        try:
+            dt = datetime.strptime(value, '%d.%m.%Y')
+        except ValueError as err:
+            raise ValueError(err)
+        if dt + timedelta(days=365 * 70) < datetime.now():
+            raise ValueError(f'more than 70 years have passed since {repr(value)}')
+        self._value = value
 
 
 class GenderField:
