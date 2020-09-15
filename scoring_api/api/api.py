@@ -6,6 +6,7 @@ import logging
 import hashlib
 import uuid
 
+from datetime import datetime
 from optparse import OptionParser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -135,7 +136,30 @@ class PhoneField:
 
 
 class DateField:
-    pass
+    def __init__(self, required, nullable):
+        self._value = None
+        self._required = required
+        self._nullable = nullable
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def required(self):
+        return self._required
+
+    @property
+    def nullable(self):
+        return self._nullable
+
+    @value.setter
+    def value(self, value):
+        try:
+            datetime.strptime(value, '%d.%m.%Y')
+        except ValueError as err:
+            raise ValueError(err)
+        self._value = value
 
 
 class BirthDayField:
