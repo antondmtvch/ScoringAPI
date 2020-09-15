@@ -106,7 +106,32 @@ class EmailField(CharField):
 
 
 class PhoneField:
-    pass
+    pattern = re.compile(r'^7\d{10}$')
+
+    def __init__(self, required, nullable):
+        self._value = None
+        self._required = required
+        self._nullable = nullable
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def required(self):
+        return self._required
+
+    @property
+    def nullable(self):
+        return self._nullable
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, (str, int)):
+            raise TypeError(f'{self.__class__.__name__} must be str, not {value.__class__.__name__}')
+        elif not re.match(self.pattern, str(value)):
+            raise ValueError(f'{value} is not valid phone number')
+        self._value = value
 
 
 class DateField:
