@@ -86,7 +86,23 @@ class ArgumentsField:
 
 
 class EmailField(CharField):
-    pass
+    pattern = re.compile(r'^\w+@\w+\.\w+$')
+
+    def __init__(self, required, nullable):
+        super().__init__(required, nullable)
+        self._value = None
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, str):
+            raise TypeError(f'{self.__class__.__name__} must be str, not {value.__class__.__name__}')
+        elif not re.match(self.pattern, value):
+            raise ValueError(f'{value} is not valid email')
+        self._value = value
 
 
 class PhoneField:
