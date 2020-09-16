@@ -45,6 +45,9 @@ class Field(abc.ABC):
         self._nullable = nullable
         self._value = None
 
+    def __eq__(self, other):
+        return self._value == other
+
     @property
     def value(self):
         return self._value
