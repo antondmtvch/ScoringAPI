@@ -135,6 +135,10 @@ class Request(abc.ABC):
             if hasattr(self, attr):
                 setattr(self, attr, kwargs[attr])
 
+    @abc.abstractmethod
+    def _validate(self):
+        pass
+
 
 class ClientsInterestsRequest(Request):
     _client_ids = ClientIDsField(required=True)
