@@ -160,6 +160,9 @@ class ClientsInterestsRequest(Request):
     def date(self, value):
         self._date.value = value
 
+    def _validate(self):
+        pass
+
 
 class OnlineScoreRequest(Request):
     _first_name = CharField(required=False, nullable=True)
@@ -217,6 +220,13 @@ class OnlineScoreRequest(Request):
     def gender(self, value):
         self._gender.value = value
 
+    def _validate(self):
+        if (self.phone and self.email) or (self.first_name and self.last_name) or (self.gender and self.birthday):
+            pass
+        else:
+            raise ValueError(f'{self.__class__.__name__}: at least one pair must be present phone-email, '
+                             f'name-surname, gender-birthday with non-empty values.')
+
 
 class MethodRequest(Request):
     _account = CharField(required=False, nullable=True)
@@ -268,6 +278,9 @@ class MethodRequest(Request):
     @method.setter
     def method(self, value):
         self._method.value = value
+
+    def _validate(self):
+        pass
 
 
 def check_auth(request):
