@@ -35,12 +35,15 @@ GENDERS = {
     FEMALE: "female",
 }
 
+PHONE_PATTERN = re.compile(r'^7\d{10}$')
+EMAIL_PATTERN = re.compile(r'^\w+@\w+\.\w+$')
 
-class CharField:
-    def __init__(self, required, nullable):
-        self._value = None
+
+class Field(abc.ABC):
+    def __init__(self, required=False, nullable=False):
         self._required = required
         self._nullable = nullable
+        self._value = None
 
     @property
     def value(self):
@@ -56,178 +59,71 @@ class CharField:
 
     @value.setter
     def value(self, value):
+        self._validate(value)
+        self._value = value
+
+    @abc.abstractmethod
+    def _validate(self, value):
+        pass
+
+
+class CharField(Field):
+    def _validate(self, value):
         if not isinstance(value, str):
             raise TypeError(f'{self.__class__.__name__} value must be str, not {value.__class__.__name__}')
-        self._value = value
-
-
-class ArgumentsField:
-    def __init__(self, required, nullable):
-        self._value = None
-        self._required = required
-        self._nullable = nullable
-
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def required(self):
-        return self._required
-
-    @property
-    def nullable(self):
-        return self._nullable
-
-    @value.setter
-    def value(self, value):
-        if not isinstance(value, dict):
-            raise TypeError(f'{self.__class__.__name__} must be dict, not {value.__class__.__name__}')
-        self._value = value
 
 
 class EmailField(CharField):
-    pattern = re.compile(r'^\w+@\w+\.\w+$')
-
-    def __init__(self, required, nullable):
-        super().__init__(required, nullable)
-        self._value = None
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        if not isinstance(value, str):
-            raise TypeError(f'{self.__class__.__name__} must be str, not {value.__class__.__name__}')
-        elif not re.match(self.pattern, value):
+    def _validate(self, value):
+        super()._validate(value)
+        if not re.match(EMAIL_PATTERN, value):
             raise ValueError(f'{value} is not valid email')
-        self._value = value
 
 
-class PhoneField:
-    pattern = re.compile(r'^7\d{10}$')
+class ArgumentsField(Field):
+    def _validate(self, value):
+        if not isinstance(value, dict):
+            raise TypeError(f'{self.__class__.__name__} must be dict, not {value.__class__.__name__}')
 
-    def __init__(self, required, nullable):
-        self._value = None
-        self._required = required
-        self._nullable = nullable
 
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def required(self):
-        return self._required
-
-    @property
-    def nullable(self):
-        return self._nullable
-
-    @value.setter
-    def value(self, value):
+class PhoneField(Field):
+    def _validate(self, value):
         if not isinstance(value, (str, int)):
             raise TypeError(f'{self.__class__.__name__} must be str or int, not {value.__class__.__name__}')
-        elif not re.match(self.pattern, str(value)):
+        elif not re.match(PHONE_PATTERN, str(value)):
             raise ValueError(f'{value} is not valid phone number')
-        self._value = value
 
 
-class DateField:
-    def __init__(self, required, nullable):
-        self._value = None
-        self._required = required
-        self._nullable = nullable
-
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def required(self):
-        return self._required
-
-    @property
-    def nullable(self):
-        return self._nullable
-
-    @value.setter
-    def value(self, value):
+class DateField(Field):
+    def _validate(self, value):
+        super()._validate(value)
         try:
-            datetime.strptime(value, '%d.%m.%Y')
+            self.dt = datetime.strptime(value, '%d.%m.%Y')
         except ValueError as err:
             raise ValueError(err)
-        self._value = value
 
 
 class BirthDayField(DateField):
-    def __init__(self, required, nullable):
-        super().__init__(required, nullable)
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        try:
-            dt = datetime.strptime(value, '%d.%m.%Y')
-        except ValueError as err:
-            raise ValueError(err)
-        if dt + timedelta(days=365 * 70) < datetime.now():
+    def _validate(self, value):
+        super()._validate(value)
+        if self.dt + timedelta(days=365 * 70) < datetime.now():
             raise ValueError(f'more than 70 years have passed since {repr(value)}')
-        self._value = value
 
 
-class GenderField:
-    def __init__(self, required, nullable):
-        self._value = None
-        self._required = required
-        self._nullable = nullable
-
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def required(self):
-        return self._required
-
-    @property
-    def nullable(self):
-        return self._nullable
-
-    @value.setter
-    def value(self, value):
+class GenderField(Field):
+    def _validate(self, value):
         if not isinstance(value, int):
             raise TypeError(f'{self.__class__.__name__} must be int, not {value.__class__.__name__}')
         elif value not in GENDERS.keys():
             raise ValueError(f'{self.__class__.__name__} value must be 0 or 1 or 2, not {value}')
-        self._value = value
 
 
-class ClientIDsField:
-    def __init__(self, required):
-        self._value = None
-        self._required = required
-
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def required(self):
-        return self._required
-
-    @value.setter
-    def value(self, value):
+class ClientIDsField(Field):
+    def _validate(self, value):
         if not isinstance(value, list):
             raise TypeError(f'{self.__class__.__name__} must be list, not {value.__class__.__name__}')
         elif not all(map(lambda x: isinstance(x, int), value)):
             raise TypeError(f'{self.__class__.__name__} must contains only int types')
-        self._value = value
 
 
 class ClientsInterestsRequest:
