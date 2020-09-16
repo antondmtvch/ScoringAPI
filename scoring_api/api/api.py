@@ -129,30 +129,141 @@ class ClientIDsField(Field):
             raise TypeError(f'{self.__class__.__name__} must contains only int types')
 
 
-class ClientsInterestsRequest:
-    client_ids = ClientIDsField(required=True)
-    date = DateField(required=False, nullable=True)
+class Request(abc.ABC):
+    def __init__(self, **kwargs):
+        for attr in kwargs:
+            if hasattr(self, attr):
+                setattr(self, attr, kwargs[attr])
 
 
-class OnlineScoreRequest:
-    first_name = CharField(required=False, nullable=True)
-    last_name = CharField(required=False, nullable=True)
-    email = EmailField(required=False, nullable=True)
-    phone = PhoneField(required=False, nullable=True)
-    birthday = BirthDayField(required=False, nullable=True)
-    gender = GenderField(required=False, nullable=True)
+class ClientsInterestsRequest(Request):
+    _client_ids = ClientIDsField(required=True)
+    _date = DateField(required=False, nullable=True)
+
+    @property
+    def client_ids(self):
+        return self._client_ids.value
+
+    @client_ids.setter
+    def client_ids(self, value):
+        self._client_ids.value = value
+
+    @property
+    def date(self):
+        return self._date.value
+
+    @date.setter
+    def date(self, value):
+        self._date.value = value
 
 
-class MethodRequest:
-    account = CharField(required=False, nullable=True)
-    login = CharField(required=True, nullable=True)
-    token = CharField(required=True, nullable=True)
-    arguments = ArgumentsField(required=True, nullable=True)
-    method = CharField(required=True, nullable=False)
+class OnlineScoreRequest(Request):
+    _first_name = CharField(required=False, nullable=True)
+    _last_name = CharField(required=False, nullable=True)
+    _email = EmailField(required=False, nullable=True)
+    _phone = PhoneField(required=False, nullable=True)
+    _birthday = BirthDayField(required=False, nullable=True)
+    _gender = GenderField(required=False, nullable=True)
+
+    @property
+    def first_name(self):
+        return self._first_name.value
+
+    @first_name.setter
+    def first_name(self, value):
+        self._first_name.value = value
+
+    @property
+    def last_name(self):
+        return self._last_name.value
+
+    @last_name.setter
+    def last_name(self, value):
+        self._last_name.value = value
+
+    @property
+    def email(self):
+        return self._email.value
+
+    @email.setter
+    def email(self, value):
+        self._email.value = value
+
+    @property
+    def phone(self):
+        return self._phone.value
+
+    @phone.setter
+    def phone(self, value):
+        self._phone.value = value
+
+    @property
+    def birthday(self):
+        return self._birthday.value
+
+    @birthday.setter
+    def birthday(self, value):
+        self._birthday.value = value
+
+    @property
+    def gender(self):
+        return self._gender.value
+
+    @gender.setter
+    def gender(self, value):
+        self._gender.value = value
+
+
+class MethodRequest(Request):
+    _account = CharField(required=False, nullable=True)
+    _login = CharField(required=True, nullable=True)
+    _token = CharField(required=True, nullable=True)
+    _arguments = ArgumentsField(required=True, nullable=True)
+    _method = CharField(required=True, nullable=False)
 
     @property
     def is_admin(self):
         return self.login == ADMIN_LOGIN
+
+    @property
+    def account(self):
+        return self._account.value
+
+    @account.setter
+    def account(self, value):
+        self._account.value = value
+
+    @property
+    def login(self):
+        return self._login.value
+
+    @login.setter
+    def login(self, value):
+        self._login.value = value
+
+    @property
+    def token(self):
+        return self._token.value
+
+    @token.setter
+    def token(self, value):
+        self._token.value = value
+
+    @property
+    def arguments(self):
+        return self._arguments.value
+
+    @arguments.setter
+    def arguments(self, value):
+        self._arguments.value = value
+
+    @property
+    def method(self):
+        return self._method.value
+
+    @method.setter
+    def method(self, value):
+        self._method.value = value
 
 
 def check_auth(request):
