@@ -172,6 +172,10 @@ class OnlineScoreRequest(Request):
     _birthday = BirthDayField(required=False, nullable=True)
     _gender = GenderField(required=False, nullable=True)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._validate()
+
     @property
     def first_name(self):
         return self._first_name.value
