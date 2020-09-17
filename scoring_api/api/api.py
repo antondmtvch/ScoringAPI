@@ -112,6 +112,15 @@ class DateField(CharField):
         except ValueError as err:
             raise ValueError(err)
 
+    @property
+    def fmt(self):
+        return self._fmt
+
+    @fmt.setter
+    def fmt(self, value):
+        super().validate(value)
+        self._fmt = value
+
 
 class BirthDayField(DateField):
     def validate(self, value):
