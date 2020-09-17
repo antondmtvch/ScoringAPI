@@ -6,10 +6,10 @@ import logging
 import hashlib
 import uuid
 
-from datetime import datetime, timedelta
 from optparse import OptionParser
 from weakref import WeakKeyDictionary
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from scoring_api.api.scoring import get_interests, get_score
 
 SALT = "Otus"
 ADMIN_LOGIN = "admin"
@@ -108,7 +108,7 @@ class DateField(CharField):
     def validate(self, value):
         super().validate(value)
         try:
-            self.dt = datetime.strptime(value, self.fmt)
+            self.dt = datetime.datetime.strptime(value, self.fmt)
         except ValueError as err:
             raise ValueError(err)
 
@@ -125,7 +125,7 @@ class DateField(CharField):
 class BirthDayField(DateField):
     def validate(self, value):
         super().validate(value)
-        if self.dt + timedelta(days=365 * 70) < datetime.now():
+        if self.dt + datetime.timedelta(days=365 * 70) < datetime.datetime.now():
             raise ValueError(f'more than 70 years have passed since {repr(value)}')
 
 
