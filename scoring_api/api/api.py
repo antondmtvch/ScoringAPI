@@ -230,7 +230,8 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     }
     store = None
 
-    def get_request_id(self, headers):
+    @staticmethod
+    def get_request_id(headers):
         return headers.get('HTTP_X_REQUEST_ID', uuid.uuid4().hex)
 
     def do_POST(self):
