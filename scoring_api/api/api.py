@@ -8,6 +8,7 @@ import uuid
 
 from datetime import datetime, timedelta
 from optparse import OptionParser
+from weakref import WeakKeyDictionary
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 SALT = "Otus"
@@ -40,81 +41,92 @@ EMAIL_PATTERN = re.compile(r'^\w+@\w+\.\w+$')
 
 
 class Field(abc.ABC):
-    def __init__(self, required=False, nullable=False):
-        self._required = required
-        self._nullable = nullable
-        self._value = None
+    def __init__(self):
+        self.default = type
+        self.data = WeakKeyDictionary()
 
-    def __eq__(self, other):
-        return self._value == other
+    def __get__(self, instance, owner):
+        return self.data.get(instance, self.default)
 
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def required(self):
-        return self._required
-
-    @property
-    def nullable(self):
-        return self._nullable
-
-    @value.setter
-    def value(self, value):
-        self._validate(value)
-        self._value = value
+    def __set__(self, instance, value):
+        self.validate(value)
+        self.data[instance] = value
 
     @abc.abstractmethod
-    def _validate(self, value):
+    def validate(self, value):
         pass
 
 
 class CharField(Field):
-    def _validate(self, value):
+    def __init__(self, required, nullable):
+        super().__init__()
+        self.required = required
+        self.nullable = nullable
+
+    def validate(self, value):
         if not isinstance(value, str):
             raise TypeError(f'{self.__class__.__name__} value must be str, not {value.__class__.__name__}')
 
 
 class EmailField(CharField):
-    def _validate(self, value):
-        super()._validate(value)
+    def validate(self, value):
+        super().validate(value)
         if not re.match(EMAIL_PATTERN, value):
             raise ValueError(f'{value} is not valid email')
 
 
 class ArgumentsField(Field):
-    def _validate(self, value):
+    def __init__(self, required, nullable):
+        super().__init__()
+        self.required = required
+        self.nullable = nullable
+
+    def validate(self, value):
         if not isinstance(value, dict):
             raise TypeError(f'{self.__class__.__name__} must be dict, not {value.__class__.__name__}')
 
 
 class PhoneField(Field):
-    def _validate(self, value):
+    def __init__(self, required, nullable):
+        super().__init__()
+        self.required = required
+        self.nullable = nullable
+
+    def validate(self, value):
         if not isinstance(value, (str, int)):
             raise TypeError(f'{self.__class__.__name__} must be str or int, not {value.__class__.__name__}')
         elif not re.match(PHONE_PATTERN, str(value)):
             raise ValueError(f'{value} is not valid phone number')
 
 
-class DateField(Field):
-    def _validate(self, value):
-        super()._validate(value)
+class DateField(CharField):
+    def __init__(self, required, nullable):
+        super().__init__(required, nullable)
+        self.dt = None
+        self._fmt = '%d.%m.%Y'
+
+    def validate(self, value):
+        super().validate(value)
         try:
-            self.dt = datetime.strptime(value, '%d.%m.%Y')
+            self.dt = datetime.strptime(value, self.fmt)
         except ValueError as err:
             raise ValueError(err)
 
 
 class BirthDayField(DateField):
-    def _validate(self, value):
-        super()._validate(value)
+    def validate(self, value):
+        super().validate(value)
         if self.dt + timedelta(days=365 * 70) < datetime.now():
             raise ValueError(f'more than 70 years have passed since {repr(value)}')
 
 
 class GenderField(Field):
-    def _validate(self, value):
+    def __init__(self, required, nullable):
+        super().__init__()
+        self.required = required
+        self.nullable = nullable
+
+    def validate(self, value):
         if not isinstance(value, int):
             raise TypeError(f'{self.__class__.__name__} must be int, not {value.__class__.__name__}')
         elif value not in GENDERS.keys():
@@ -122,11 +134,15 @@ class GenderField(Field):
 
 
 class ClientIDsField(Field):
-    def _validate(self, value):
+    def __init__(self, required):
+        super().__init__()
+        self.required = required
+
+    def validate(self, value):
         if not isinstance(value, list):
             raise TypeError(f'{self.__class__.__name__} must be list, not {value.__class__.__name__}')
         elif not all(map(lambda x: isinstance(x, int), value)):
-            raise TypeError(f'{self.__class__.__name__} must contains only int types')
+            raise TypeError(f'{value.__class__.__name__} must contains only int types')
 
 
 class Request(abc.ABC):
@@ -136,95 +152,31 @@ class Request(abc.ABC):
                 setattr(self, attr, kwargs[attr])
 
     @abc.abstractmethod
-    def _validate(self):
+    def validate(self):
         pass
 
 
 class ClientsInterestsRequest(Request):
-    _client_ids = ClientIDsField(required=True)
-    _date = DateField(required=False, nullable=True)
+    client_ids = ClientIDsField(required=True)
+    date = DateField(required=False, nullable=True)
 
-    @property
-    def client_ids(self):
-        return self._client_ids.value
-
-    @client_ids.setter
-    def client_ids(self, value):
-        self._client_ids.value = value
-
-    @property
-    def date(self):
-        return self._date.value
-
-    @date.setter
-    def date(self, value):
-        self._date.value = value
-
-    def _validate(self):
+    def validate(self):
         pass
 
 
 class OnlineScoreRequest(Request):
-    _first_name = CharField(required=False, nullable=True)
-    _last_name = CharField(required=False, nullable=True)
-    _email = EmailField(required=False, nullable=True)
-    _phone = PhoneField(required=False, nullable=True)
-    _birthday = BirthDayField(required=False, nullable=True)
-    _gender = GenderField(required=False, nullable=True)
+    first_name = CharField(required=False, nullable=True)
+    last_name = CharField(required=False, nullable=True)
+    email = EmailField(required=False, nullable=True)
+    phone = PhoneField(required=False, nullable=True)
+    birthday = BirthDayField(required=False, nullable=True)
+    gender = GenderField(required=False, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._validate()
+        self.validate()
 
-    @property
-    def first_name(self):
-        return self._first_name.value
-
-    @first_name.setter
-    def first_name(self, value):
-        self._first_name.value = value
-
-    @property
-    def last_name(self):
-        return self._last_name.value
-
-    @last_name.setter
-    def last_name(self, value):
-        self._last_name.value = value
-
-    @property
-    def email(self):
-        return self._email.value
-
-    @email.setter
-    def email(self, value):
-        self._email.value = value
-
-    @property
-    def phone(self):
-        return self._phone.value
-
-    @phone.setter
-    def phone(self, value):
-        self._phone.value = value
-
-    @property
-    def birthday(self):
-        return self._birthday.value
-
-    @birthday.setter
-    def birthday(self, value):
-        self._birthday.value = value
-
-    @property
-    def gender(self):
-        return self._gender.value
-
-    @gender.setter
-    def gender(self, value):
-        self._gender.value = value
-
-    def _validate(self):
+    def validate(self):
         if (self.phone and self.email) or (self.first_name and self.last_name) or (self.gender and self.birthday):
             pass
         else:
@@ -233,57 +185,17 @@ class OnlineScoreRequest(Request):
 
 
 class MethodRequest(Request):
-    _account = CharField(required=False, nullable=True)
-    _login = CharField(required=True, nullable=True)
-    _token = CharField(required=True, nullable=True)
-    _arguments = ArgumentsField(required=True, nullable=True)
-    _method = CharField(required=True, nullable=False)
+    account = CharField(required=False, nullable=True)
+    login = CharField(required=True, nullable=True)
+    token = CharField(required=True, nullable=True)
+    arguments = ArgumentsField(required=True, nullable=True)
+    method = CharField(required=True, nullable=False)
 
     @property
     def is_admin(self):
         return self.login == ADMIN_LOGIN
 
-    @property
-    def account(self):
-        return self._account.value
-
-    @account.setter
-    def account(self, value):
-        self._account.value = value
-
-    @property
-    def login(self):
-        return self._login.value
-
-    @login.setter
-    def login(self, value):
-        self._login.value = value
-
-    @property
-    def token(self):
-        return self._token.value
-
-    @token.setter
-    def token(self, value):
-        self._token.value = value
-
-    @property
-    def arguments(self):
-        return self._arguments.value
-
-    @arguments.setter
-    def arguments(self, value):
-        self._arguments.value = value
-
-    @property
-    def method(self):
-        return self._method.value
-
-    @method.setter
-    def method(self, value):
-        self._method.value = value
-
-    def _validate(self):
+    def validate(self):
         pass
 
 
@@ -332,7 +244,6 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
                     code = INTERNAL_ERROR
             else:
                 code = NOT_FOUND
-
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
