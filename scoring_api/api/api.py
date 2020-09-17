@@ -151,7 +151,7 @@ class ClientIDsField(Field):
         if not isinstance(value, list):
             raise TypeError(f'{self.__class__.__name__} must be list, not {value.__class__.__name__}')
         elif not all(map(lambda x: isinstance(x, int), value)):
-            raise TypeError(f'{value.__class__.__name__} must contains only int types')
+            raise TypeError(f'{self.__class__.__name__} must contains only int types')
 
 
 class Request(abc.ABC):
