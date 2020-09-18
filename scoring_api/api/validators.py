@@ -18,6 +18,7 @@ def type_validator(*types):
 def email_validator(func):
     pattern = re.compile(r'^\w+@\w+\.\w+$')
     @wraps(func)
+    @type_validator(str)
     def wrapper(self, value):
         if not re.match(pattern, str(value)):
             raise ValueError(f'{self.__class__.__name__}: {value} is not valid email')
