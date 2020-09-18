@@ -3,16 +3,9 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 
-def decorator(deco):
-    def wrapped(f):
-        return update_wrapper(deco(f), f)
-    update_wrapper(wrapped, deco)
-    return wrapped
-
-
-@decorator
 def type_validator(*types):
     def validator(func):
+        @wraps(func)
         def wrapper(self, value):
             if not isinstance(value, types):
                 t = ' or '.join((t.__name__ for t in types))
@@ -22,10 +15,9 @@ def type_validator(*types):
     return validator
 
 
-@decorator
 def email_validator(func):
     pattern = re.compile(r'^\w+@\w+\.\w+$')
-
+    @wraps(func)
     def wrapper(self, value):
         if not re.match(pattern, str(value)):
             raise ValueError(f'{self.__class__.__name__}: {value} is not valid email')
@@ -33,10 +25,10 @@ def email_validator(func):
     return wrapper
 
 
-@decorator
 def phone_validator(func):
     pattern = re.compile(r'^7\d{10}$')
-
+    @wraps(func)
+    @type_validator(str, int)
     def wrapper(self, value):
         if not re.match(pattern, str(value)):
             raise ValueError(f'{self.__class__.__name__}: {value} is not valid phone number')
@@ -44,14 +36,15 @@ def phone_validator(func):
     return wrapper
 
 
-@decorator
 def date_validator(fmt):
     def validator(func):
+        @wraps(func)
+        @type_validator(str)
         def wrapper(self, value):
             try:
-                datetime.datetime.strptime(value, fmt)
+                datetime.strptime(value, fmt)
             except ValueError as e:
-                raise e
+                raise ValueError(f'{self.__class__.__name__}: {e}')
             return func(self, value)
         return wrapper
     return validator
