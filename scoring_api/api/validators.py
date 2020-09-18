@@ -16,7 +16,7 @@ def type_validator(*types):
 
 
 def email_validator(func):
-    pattern = re.compile(r'^\w+@\w+\.\w+$')
+    pattern = re.compile(r'^[._\w]+@\w+\.\w{2,10}$')
     @wraps(func)
     @type_validator(str)
     def wrapper(self, value):
