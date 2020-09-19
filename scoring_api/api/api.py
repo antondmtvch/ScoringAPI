@@ -74,11 +74,8 @@ class CharField(BaseField):
 
 
 class EmailField(CharField):
-    def validate(self, value):
-        super().validate(value)
-        if not re.match(EMAIL_PATTERN, value):
-            raise ValueError(f'{value} is not valid email')
-
+    @email_validator
+    def validate(self, value): pass
 
 class ArgumentsField(Field):
     def __init__(self, required, nullable):
