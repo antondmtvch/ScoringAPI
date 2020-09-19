@@ -37,8 +37,6 @@ GENDERS = {
     FEMALE: "female",
 }
 
-PHONE_PATTERN = re.compile(r'^7\d{10}$')
-EMAIL_PATTERN = re.compile(r'^\w+@\w+\.\w+$')
 
 
 
@@ -77,11 +75,6 @@ class EmailField(CharField):
     @email_validator
     def validate(self, value): pass
 
-class ArgumentsField(Field):
-    def __init__(self, required, nullable):
-        super().__init__()
-        self.required = required
-        self.nullable = nullable
 
 class ArgumentsField(BaseField):
     @type_validator(dict)
@@ -106,34 +99,15 @@ class BirthDayField(DateField):
 class GenderField(BaseField):
     @type_validator(int)
     def validate(self, value):
-        super().validate(value)
-        if self.dt + datetime.timedelta(days=365 * 70) < datetime.datetime.now():
-            raise ValueError(f'more than 70 years have passed since {repr(value)}')
-
-
-class GenderField(Field):
-    def __init__(self, required, nullable):
-        super().__init__()
-        self.required = required
-        self.nullable = nullable
-
-    def validate(self, value):
-        if not isinstance(value, int):
-            raise TypeError(f'{self.__class__.__name__} must be int, not {value.__class__.__name__}')
-        elif value not in GENDERS.keys():
+        if value not in GENDERS.keys():
             raise ValueError(f'{self.__class__.__name__} value must be 0 or 1 or 2, not {value}')
 
 
-class ClientIDsField(Field):
-    def __init__(self, required):
-        super().__init__()
-        self.required = required
-
+class ClientIDsField(BaseField):
+    @type_validator(list)
     def validate(self, value):
-        if not isinstance(value, list):
-            raise TypeError(f'{self.__class__.__name__} must be list, not {value.__class__.__name__}')
-        elif not all(map(lambda x: isinstance(x, int), value)):
-            raise TypeError(f'{self.__class__.__name__} must contains only int types')
+        if not all(map(lambda x: isinstance(x, int), value)):
+            raise TypeError(f'{self.__class__.__name__}: {value} must contains only int types')
 
 
 class Request(abc.ABC):
