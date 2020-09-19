@@ -3,8 +3,14 @@
 
 ### Запуск
 Для запуска необходим `Python 3.8`
+- Запустить локально
 ```
-python main.py --port [port] --log [log file]
+>> python main.py --port [port] --log [log file]
+```
+- Запустить в контейнере
+```
+>> docker build -t scoring_api .
+>> docker run -d -p 8080:8080 scoring_api
 ```
 
 ### Структура запроса
