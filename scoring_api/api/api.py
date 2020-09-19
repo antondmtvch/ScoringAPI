@@ -40,21 +40,31 @@ PHONE_PATTERN = re.compile(r'^7\d{10}$')
 EMAIL_PATTERN = re.compile(r'^\w+@\w+\.\w+$')
 
 
-class Field(abc.ABC):
-    def __init__(self):
-        self.default = type
+
+class BaseField(abc.ABC):
+    def __init__(self, required=False, nullable=False):
+        self.default = None
+        self.required = required
+        self.nullable = nullable
         self.data = WeakKeyDictionary()
 
     def __get__(self, instance, owner):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        self.validate(value)
+        self.prevalidate(value)
+        if value is not self.default:
+            self.validate(value)
         self.data[instance] = value
 
+    def prevalidate(self, value):
+        if (value is self.default) and (not self.nullable or self.required):
+            raise ValueError(f'{self.__class__.__name__} is required')
+        elif not value and not self.nullable:
+            raise ValueError(f'{self.__class__.__name__} not be nullable')
+
     @abc.abstractmethod
-    def validate(self, value):
-        pass
+    def validate(self, value): pass
 
 
 class CharField(Field):
