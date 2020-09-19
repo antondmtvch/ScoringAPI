@@ -88,43 +88,23 @@ class ArgumentsField(BaseField):
     def validate(self, value): pass
 
 
-class PhoneField(Field):
-    def __init__(self, required, nullable):
-        super().__init__()
-        self.required = required
-        self.nullable = nullable
-
-    def validate(self, value):
-        if not isinstance(value, (str, int)):
-            raise TypeError(f'{self.__class__.__name__} must be str or int, not {value.__class__.__name__}')
-        elif not re.match(PHONE_PATTERN, str(value)):
-            raise ValueError(f'{value} is not valid phone number')
+class PhoneField(BaseField):
+    @phone_validator
+    def validate(self, value): pass
 
 
 class DateField(CharField):
-    def __init__(self, required, nullable):
-        super().__init__(required, nullable)
-        self.dt = None
-        self._fmt = '%d.%m.%Y'
-
-    def validate(self, value):
-        super().validate(value)
-        try:
-            self.dt = datetime.datetime.strptime(value, self.fmt)
-        except ValueError as err:
-            raise ValueError(err)
-
-    @property
-    def fmt(self):
-        return self._fmt
-
-    @fmt.setter
-    def fmt(self, value):
-        super().validate(value)
-        self._fmt = value
+    @date_validator(fmt='%d.%m.%Y')
+    def validate(self, value): pass
 
 
 class BirthDayField(DateField):
+    @birthday_validator(max_years=70, fmt='%d.%m.%Y')
+    def validate(self, value): pass
+
+
+class GenderField(BaseField):
+    @type_validator(int)
     def validate(self, value):
         super().validate(value)
         if self.dt + datetime.timedelta(days=365 * 70) < datetime.datetime.now():
