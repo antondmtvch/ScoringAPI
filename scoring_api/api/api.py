@@ -208,6 +208,28 @@ def check_auth(request):
     return False
 
 
+def online_score_handler(request, ctx, store):
+    score = 42
+    if check_auth(request):
+        score_request = OnlineScoreRequest(**request.arguments)
+        ctx.update(score_request.context)
+        if not request.is_admin:
+            score = get_score(store=store, phone=score_request.phone, email=score_request.email,
+                              birthday=score_request.birthday, gender=score_request.gender,
+                              first_name=score_request.first_name, last_name=score_request.last_name)
+            return {'score': score}, OK
+        return {'score': score}, OK
+    return ERRORS[FORBIDDEN], FORBIDDEN
+
+
+def clients_interests_handler(request, ctx, store):
+    if check_auth(request):
+        interests_request = ClientsInterestsRequest(**request.arguments)
+        ctx.update(interests_request.context)
+        return {str(i): get_interests(store, i) for i in interests_request.client_ids}, OK
+    return ERRORS[FORBIDDEN], FORBIDDEN
+
+
 def method_handler(request, ctx, store):
     response, code = None, None
     return response, code
