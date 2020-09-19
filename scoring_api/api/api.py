@@ -8,8 +8,10 @@ import uuid
 from optparse import OptionParser
 from weakref import WeakKeyDictionary
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from scoring_api.api.validators import *
 from scoring_api.api.scoring import get_interests, get_score
+from scoring_api.api.validators import (
+    type_validator, email_validator, phone_validator, date_validator, birthday_validator
+)
 
 SALT, ADMIN_LOGIN, ADMIN_SALT = 'Otus', 'admin', '42'
 
