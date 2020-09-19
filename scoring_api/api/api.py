@@ -83,9 +83,9 @@ class ArgumentsField(Field):
         self.required = required
         self.nullable = nullable
 
-    def validate(self, value):
-        if not isinstance(value, dict):
-            raise TypeError(f'{self.__class__.__name__} must be dict, not {value.__class__.__name__}')
+class ArgumentsField(BaseField):
+    @type_validator(dict)
+    def validate(self, value): pass
 
 
 class PhoneField(Field):
