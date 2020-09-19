@@ -135,7 +135,8 @@ class ClientsInterestsRequest(BaseRequest):
     def context(self, value):
         self._context = value
 
-class OnlineScoreRequest(Request):
+
+class OnlineScoreRequest(BaseRequest):
     first_name = CharField(required=False, nullable=True)
     last_name = CharField(required=False, nullable=True)
     email = EmailField(required=False, nullable=True)
@@ -143,13 +144,31 @@ class OnlineScoreRequest(Request):
     birthday = BirthDayField(required=False, nullable=True)
     gender = GenderField(required=False, nullable=True)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, first_name=None, last_name=None, email=None, phone=None, birthday=None, gender=None):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.email = email
+        self.phone = phone
+        self.birthday = birthday
+        self.gender = gender
+        self.context = {'has': [v for v in self.get_attribute_values() if v]}
         self.validate()
 
+    def get_attribute_values(self):
+        attrs = ((k, v) for k, v in self.__class__.__dict__.items() if isinstance(v, BaseField))
+        return [n for n, _ in attrs if self.__getattribute__(n) not in {None, ''}]
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
+
     def validate(self):
-        if (self.phone and self.email) or (self.first_name and self.last_name) or (self.gender and self.birthday):
-            pass
+        if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
+                or (self.first_name and self.last_name): pass
         else:
             raise ValueError(f'{self.__class__.__name__}: at least one pair must be present phone-email, '
                              f'name-surname, gender-birthday with non-empty values.')
