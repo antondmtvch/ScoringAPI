@@ -12,15 +12,15 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from scoring_api.api.validators import *
 from scoring_api.api.scoring import get_interests, get_score
 
-SALT = "Otus"
-ADMIN_LOGIN = "admin"
-ADMIN_SALT = "42"
+SALT, ADMIN_LOGIN, ADMIN_SALT = 'Otus', 'admin', '42'
+
 OK = 200
 BAD_REQUEST = 400
 FORBIDDEN = 403
 NOT_FOUND = 404
 INVALID_REQUEST = 422
 INTERNAL_ERROR = 500
+
 ERRORS = {
     BAD_REQUEST: "Bad Request",
     FORBIDDEN: "Forbidden",
@@ -28,9 +28,8 @@ ERRORS = {
     INVALID_REQUEST: "Invalid Request",
     INTERNAL_ERROR: "Internal Server Error",
 }
-UNKNOWN = 0
-MALE = 1
-FEMALE = 2
+UNKNOWN, MALE, FEMALE = 0, 1, 2
+
 GENDERS = {
     UNKNOWN: "unknown",
     MALE: "male",
