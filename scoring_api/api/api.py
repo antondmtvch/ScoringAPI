@@ -9,6 +9,7 @@ import uuid
 from optparse import OptionParser
 from weakref import WeakKeyDictionary
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from scoring_api.api.validators import *
 from scoring_api.api.scoring import get_interests, get_score
 
 SALT = "Otus"
@@ -67,15 +68,9 @@ class BaseField(abc.ABC):
     def validate(self, value): pass
 
 
-class CharField(Field):
-    def __init__(self, required, nullable):
-        super().__init__()
-        self.required = required
-        self.nullable = nullable
-
-    def validate(self, value):
-        if not isinstance(value, str):
-            raise TypeError(f'{self.__class__.__name__} value must be str, not {value.__class__.__name__}')
+class CharField(BaseField):
+    @type_validator(str, None)
+    def validate(self, value): pass
 
 
 class EmailField(CharField):
