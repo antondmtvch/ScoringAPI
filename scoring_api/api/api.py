@@ -118,13 +118,22 @@ class BaseRequest(abc.ABC):
     def context(self): pass
 
 
-class ClientsInterestsRequest(Request):
-    client_ids = ClientIDsField(required=True)
+class ClientsInterestsRequest(BaseRequest):
+    client_ids = ClientIDsField(required=True, nullable=False)
     date = DateField(required=False, nullable=True)
 
-    def validate(self):
-        pass
+    def __init__(self, client_ids=None, date=None, **kwargs):  # todo: init from dict
+        self.client_ids = [] if not client_ids else client_ids
+        self.date = date
+        self.context = {'nclients': len(self.client_ids)}
 
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
 
 class OnlineScoreRequest(Request):
     first_name = CharField(required=False, nullable=True)
