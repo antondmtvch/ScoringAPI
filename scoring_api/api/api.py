@@ -37,8 +37,6 @@ GENDERS = {
 }
 
 
-
-
 class BaseField(abc.ABC):
     def __init__(self, required=False, nullable=False):
         self.default = None
@@ -121,7 +119,7 @@ class ClientsInterestsRequest(BaseRequest):
     client_ids = ClientIDsField(required=True, nullable=False)
     date = DateField(required=False, nullable=True)
 
-    def __init__(self, client_ids=None, date=None, **kwargs):  # todo: init from dict
+    def __init__(self, client_ids=None, date=None):
         self.client_ids = [] if not client_ids else client_ids
         self.date = date
         self.context = {'nclients': len(self.client_ids)}
