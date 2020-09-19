@@ -1,4 +1,3 @@
-import re
 import abc
 import json
 import datetime
@@ -260,11 +259,12 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         response, code = {}, OK
         context = {"request_id": self.get_request_id(self.headers)}
-        request = None
+        request, data_string = None, None
         try:
             data_string = self.rfile.read(int(self.headers['Content-Length']))
             request = json.loads(data_string)
-        except:
+        except Exception as e:
+            logging.exception(e)
             code = BAD_REQUEST
 
         if request:
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     op = OptionParser()
     op.add_option("-p", "--port", action="store", type=int, default=8080)
     op.add_option("-l", "--log", action="store", default=None)
-    (opts, args) = op.parse_args()
+    opts, args = op.parse_args()
     logging.basicConfig(filename=opts.log, level=logging.INFO,
                         format='[%(asctime)s] %(levelname).1s %(message)s', datefmt='%Y.%m.%d %H:%M:%S')
     server = HTTPServer(("localhost", opts.port), MainHTTPHandler)
