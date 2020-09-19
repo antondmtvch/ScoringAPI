@@ -110,15 +110,12 @@ class ClientIDsField(BaseField):
             raise TypeError(f'{self.__class__.__name__}: {value} must contains only int types')
 
 
-class Request(abc.ABC):
-    def __init__(self, **kwargs):
-        for attr in kwargs:
-            if hasattr(self, attr):
-                setattr(self, attr, kwargs[attr])
+class BaseRequest(abc.ABC):
+    _context = None
 
+    @property
     @abc.abstractmethod
-    def validate(self):
-        pass
+    def context(self): pass
 
 
 class ClientsInterestsRequest(Request):
