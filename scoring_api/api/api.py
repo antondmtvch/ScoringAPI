@@ -243,8 +243,9 @@ def method_handler(request, ctx, store):
             if handler := handlers.get(request.method):
                 response, code = handler(store=store, ctx=ctx, request=request)
             return response, code
-        except (TypeError, ValueError) as e:
-            return response, code
+        except (TypeError, ValueError) as err:
+            logging.exception(err)
+            return str(err), code
     return response, code
 
 
