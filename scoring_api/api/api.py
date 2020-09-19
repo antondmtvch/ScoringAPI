@@ -231,7 +231,19 @@ def clients_interests_handler(request, ctx, store):
 
 
 def method_handler(request, ctx, store):
-    response, code = None, None
+    response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
+    handlers = {
+        'online_score': online_score_handler,
+        'clients_interests': clients_interests_handler
+    }
+    if body := request.get('body'):
+        try:
+            request = MethodRequest(**body)
+            if handler := handlers.get(request.method):
+                response, code = handler(store=store, ctx=ctx, request=request)
+            return response, code
+        except (TypeError, ValueError) as e:
+            return response, code
     return response, code
 
 
