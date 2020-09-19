@@ -174,19 +174,31 @@ class OnlineScoreRequest(BaseRequest):
                              f'name-surname, gender-birthday with non-empty values.')
 
 
-class MethodRequest(Request):
+class MethodRequest(BaseRequest):
     account = CharField(required=False, nullable=True)
     login = CharField(required=True, nullable=True)
     token = CharField(required=True, nullable=True)
     arguments = ArgumentsField(required=True, nullable=True)
     method = CharField(required=True, nullable=False)
 
+    def __init__(self, account=None, login=None, token=None, arguments=None, method=None):
+        self.account = account
+        self.login = login
+        self.token = token
+        self.arguments = {} if not arguments else arguments
+        self.method = method
+
     @property
     def is_admin(self):
         return self.login == ADMIN_LOGIN
 
-    def validate(self):
-        pass
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
 
 
 def check_auth(request):
