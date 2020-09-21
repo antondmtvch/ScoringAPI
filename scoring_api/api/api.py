@@ -12,6 +12,7 @@ from scoring_api.api.scoring import get_interests, get_score
 from scoring_api.api.validators import (
     type_validator, email_validator, phone_validator, date_validator, birthday_validator
 )
+from scoring_api.api.exceptions import ValidationError
 
 SALT, ADMIN_LOGIN, ADMIN_SALT = 'Otus', 'admin', '42'
 
@@ -59,16 +60,16 @@ class BaseField(abc.ABC):
 
     def prevalidate(self, value):
         if (value is self.default) and (not self.nullable or self.required):
-            raise ValueError(f'field {repr(self.name)} is required')
+            raise ValidationError(f'field {repr(self.name)} is required')
         elif not value and not self.nullable:
-            raise ValueError(f'{repr(self.name)} not be nullable')
+            raise ValidationError(f'field {repr(self.name)} not be nullable')
 
     @abc.abstractmethod
     def validate(self, value): pass
 
 
 class CharField(BaseField):
-    @type_validator(str, None)
+    @type_validator(str)
     def validate(self, value): pass
 
 
@@ -101,14 +102,14 @@ class GenderField(BaseField):
     @type_validator(int)
     def validate(self, value):
         if value not in GENDERS.keys():
-            raise ValueError(f'{self.__class__.__name__} value must be 0 or 1 or 2, not {value}')
+            raise ValidationError(f'{repr(self.name)} field value must be 0 or 1 or 2, not {value}')
 
 
 class ClientIDsField(BaseField):
     @type_validator(list)
     def validate(self, value):
         if not all(map(lambda x: isinstance(x, int), value)):
-            raise TypeError(f'{self.__class__.__name__}: {value} must contains only int types')
+            raise ValidationError(f'{repr(self.name)} field must contains only int types')
 
 
 class BaseRequest(abc.ABC):
@@ -171,8 +172,8 @@ class OnlineScoreRequest(BaseRequest):
         if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
                 or (self.first_name and self.last_name): pass
         else:
-            raise ValueError(f'{self.__class__.__name__}: at least one pair must be present phone-email, '
-                             f'name-surname, gender-birthday with non-empty values.')
+            raise ValidationError(f'at least one pair must be present: phone-email or name-surname or gender-birthday '
+                                  f'with non-empty values.')
 
 
 class MethodRequest(BaseRequest):
@@ -246,7 +247,7 @@ def method_handler(request, ctx, store):
             if handler := handlers.get(request.method):
                 response, code = handler(store=store, ctx=ctx, request=request)
             return response, code
-        except (TypeError, ValueError) as err:
+        except ValidationError as err:
             logging.exception(err)
             return str(err), code
     return response, code
