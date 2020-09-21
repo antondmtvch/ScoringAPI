@@ -54,11 +54,14 @@ class BaseField(abc.ABC):
             self.validate(value)
         self.data[instance] = value
 
+    def __set_name__(self, owner, name):
+        self.name = name
+
     def prevalidate(self, value):
         if (value is self.default) and (not self.nullable or self.required):
-            raise ValueError(f'{self.__class__.__name__} is required')
+            raise ValueError(f'field {repr(self.name)} is required')
         elif not value and not self.nullable:
-            raise ValueError(f'{self.__class__.__name__} not be nullable')
+            raise ValueError(f'{repr(self.name)} not be nullable')
 
     @abc.abstractmethod
     def validate(self, value): pass
