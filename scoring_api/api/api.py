@@ -220,7 +220,7 @@ def online_score_handler(request, ctx, store):
                               first_name=score_request.first_name, last_name=score_request.last_name)
             return {'score': score}, OK
         return {'score': score}, OK
-    return ERRORS[FORBIDDEN], FORBIDDEN
+    return None, FORBIDDEN
 
 
 def clients_interests_handler(request, ctx, store):
@@ -228,11 +228,11 @@ def clients_interests_handler(request, ctx, store):
         interests_request = ClientsInterestsRequest(**request.arguments)
         ctx.update(interests_request.context)
         return {str(i): get_interests(store, i) for i in interests_request.client_ids}, OK
-    return ERRORS[FORBIDDEN], FORBIDDEN
+    return None, FORBIDDEN
 
 
 def method_handler(request, ctx, store):
-    response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
+    response, code = None, INVALID_REQUEST
     handlers = {
         'online_score': online_score_handler,
         'clients_interests': clients_interests_handler
