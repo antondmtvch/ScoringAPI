@@ -116,8 +116,12 @@ class BaseRequest(abc.ABC):
     _context = None
 
     @property
-    @abc.abstractmethod
-    def context(self): pass
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
 
 
 class ClientsInterestsRequest(BaseRequest):
@@ -128,14 +132,6 @@ class ClientsInterestsRequest(BaseRequest):
         self.client_ids = [] if not client_ids else client_ids
         self.date = date
         self.context = {'nclients': len(self.client_ids)}
-
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, value):
-        self._context = value
 
 
 class OnlineScoreRequest(BaseRequest):
@@ -159,14 +155,6 @@ class OnlineScoreRequest(BaseRequest):
     def get_attribute_values(self):
         attrs = ((k, v) for k, v in self.__class__.__dict__.items() if isinstance(v, BaseField))
         return [n for n, _ in attrs if self.__getattribute__(n) not in {None, ''}]
-
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, value):
-        self._context = value
 
     def validate(self):
         if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
