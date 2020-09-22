@@ -12,7 +12,6 @@ from scoring_api.api.scoring import get_interests, get_score
 from scoring_api.api.validators import (
     type_validator, email_validator, phone_validator, date_validator, birthday_validator
 )
-from scoring_api.api.exceptions import ValidationError
 
 SALT, ADMIN_LOGIN, ADMIN_SALT = 'Otus', 'admin', '42'
 
@@ -55,21 +54,18 @@ class BaseField(abc.ABC):
             self.validate(value)
         self.data[instance] = value
 
-    def __set_name__(self, owner, name):
-        self.name = name
-
     def prevalidate(self, value):
         if (value is self.default) and (not self.nullable or self.required):
-            raise ValidationError(f'field {repr(self.name)} is required')
+            raise ValueError(f'{self.__class__.__name__} is required')
         elif not value and not self.nullable:
-            raise ValidationError(f'field {repr(self.name)} not be nullable')
+            raise ValueError(f'{self.__class__.__name__} not be nullable')
 
     @abc.abstractmethod
     def validate(self, value): pass
 
 
 class CharField(BaseField):
-    @type_validator(str)
+    @type_validator(str, None)
     def validate(self, value): pass
 
 
@@ -102,26 +98,22 @@ class GenderField(BaseField):
     @type_validator(int)
     def validate(self, value):
         if value not in GENDERS.keys():
-            raise ValidationError(f'{repr(self.name)} field value must be 0 or 1 or 2, not {value}')
+            raise ValueError(f'{self.__class__.__name__} value must be 0 or 1 or 2, not {value}')
 
 
 class ClientIDsField(BaseField):
     @type_validator(list)
     def validate(self, value):
         if not all(map(lambda x: isinstance(x, int), value)):
-            raise ValidationError(f'{repr(self.name)} field must contains only int types')
+            raise TypeError(f'{self.__class__.__name__}: {value} must contains only int types')
 
 
 class BaseRequest(abc.ABC):
     _context = None
 
     @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, value):
-        self._context = value
+    @abc.abstractmethod
+    def context(self): pass
 
 
 class ClientsInterestsRequest(BaseRequest):
@@ -132,6 +124,14 @@ class ClientsInterestsRequest(BaseRequest):
         self.client_ids = [] if not client_ids else client_ids
         self.date = date
         self.context = {'nclients': len(self.client_ids)}
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
 
 
 class OnlineScoreRequest(BaseRequest):
@@ -156,12 +156,20 @@ class OnlineScoreRequest(BaseRequest):
         attrs = ((k, v) for k, v in self.__class__.__dict__.items() if isinstance(v, BaseField))
         return [n for n, _ in attrs if self.__getattribute__(n) not in {None, ''}]
 
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
+
     def validate(self):
         if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
                 or (self.first_name and self.last_name): pass
         else:
-            raise ValidationError(f'at least one pair must be present: phone-email or name-surname or gender-birthday '
-                                  f'with non-empty values.')
+            raise ValueError(f'{self.__class__.__name__}: at least one pair must be present phone-email, '
+                             f'name-surname, gender-birthday with non-empty values.')
 
 
 class MethodRequest(BaseRequest):
@@ -212,7 +220,7 @@ def online_score_handler(request, ctx, store):
                               first_name=score_request.first_name, last_name=score_request.last_name)
             return {'score': score}, OK
         return {'score': score}, OK
-    return None, FORBIDDEN
+    return ERRORS[FORBIDDEN], FORBIDDEN
 
 
 def clients_interests_handler(request, ctx, store):
@@ -220,11 +228,11 @@ def clients_interests_handler(request, ctx, store):
         interests_request = ClientsInterestsRequest(**request.arguments)
         ctx.update(interests_request.context)
         return {str(i): get_interests(store, i) for i in interests_request.client_ids}, OK
-    return None, FORBIDDEN
+    return ERRORS[FORBIDDEN], FORBIDDEN
 
 
 def method_handler(request, ctx, store):
-    response, code = None, INVALID_REQUEST
+    response, code = ERRORS[INVALID_REQUEST], INVALID_REQUEST
     handlers = {
         'online_score': online_score_handler,
         'clients_interests': clients_interests_handler
@@ -235,7 +243,7 @@ def method_handler(request, ctx, store):
             if handler := handlers.get(request.method):
                 response, code = handler(store=store, ctx=ctx, request=request)
             return response, code
-        except ValidationError as err:
+        except (TypeError, ValueError) as err:
             logging.exception(err)
             return str(err), code
     return response, code
