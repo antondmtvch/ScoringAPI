@@ -80,6 +80,10 @@ class EmailField(CharField):
 
 
 class ArgumentsField(BaseField):
+    def __init__(self, **kwargs):
+        self.default = {}
+        super().__init__(**kwargs)
+
     @type_validator(dict)
     def validate(self, value): pass
 
@@ -107,6 +111,10 @@ class GenderField(BaseField):
 
 
 class ClientIDsField(BaseField):
+    def __init__(self, **kwargs):
+        self.default = []
+        super().__init__(**kwargs)
+
     @type_validator(list)
     def validate(self, value):
         if not all(map(lambda x: isinstance(x, int), value)):
