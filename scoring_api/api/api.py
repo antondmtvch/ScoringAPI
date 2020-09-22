@@ -122,15 +122,14 @@ class ClientIDsField(BaseField):
 
 
 class BaseRequest(abc.ABC):
-    _context = None
+    def __new__(cls, **kwargs):
+        cls.attrs = [k for k, v in cls.__dict__.items() if isinstance(v, BaseField)]
+        return super(BaseRequest, cls).__new__(cls)
 
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, value):
-        self._context = value
+    def __init__(self, **kwargs):
+        for name in self.attrs:
+            setattr(self, name, kwargs.get(name))
+        self.context = {}
 
 
 class ClientsInterestsRequest(BaseRequest):
