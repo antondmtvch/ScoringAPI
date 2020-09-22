@@ -133,13 +133,12 @@ class BaseRequest(abc.ABC):
 
 
 class ClientsInterestsRequest(BaseRequest):
-    client_ids = ClientIDsField(required=True, nullable=False)
+    client_ids = ClientIDsField(required=True)
     date = DateField(required=False, nullable=True)
 
-    def __init__(self, client_ids=None, date=None):
-        self.client_ids = [] if not client_ids else client_ids
-        self.date = date
-        self.context = {'nclients': len(self.client_ids)}
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.context.update({'nclients': len(self.client_ids)})
 
 
 class OnlineScoreRequest(BaseRequest):
@@ -150,14 +149,9 @@ class OnlineScoreRequest(BaseRequest):
     birthday = BirthDayField(required=False, nullable=True)
     gender = GenderField(required=False, nullable=True)
 
-    def __init__(self, first_name=None, last_name=None, email=None, phone=None, birthday=None, gender=None):
-        self.first_name = first_name
-        self.last_name = last_name
-        self.email = email
-        self.phone = phone
-        self.birthday = birthday
-        self.gender = gender
-        self.context = {'has': [v for v in self.get_attribute_values() if v]}
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.context.update({'has': [a for a in self.attrs if getattr(self, a) not in {None, ''}]})
         self.validate()
 
     def get_attribute_values(self):
