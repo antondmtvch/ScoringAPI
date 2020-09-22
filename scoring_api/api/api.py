@@ -154,10 +154,6 @@ class OnlineScoreRequest(BaseRequest):
         self.context.update({'has': [a for a in self.attrs if getattr(self, a) not in {None, ''}]})
         self.validate()
 
-    def get_attribute_values(self):
-        attrs = ((k, v) for k, v in self.__class__.__dict__.items() if isinstance(v, BaseField))
-        return [n for n, _ in attrs if self.__getattribute__(n) not in {None, ''}]
-
     def validate(self):
         if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
                 or (self.first_name and self.last_name): pass
@@ -173,24 +169,9 @@ class MethodRequest(BaseRequest):
     arguments = ArgumentsField(required=True, nullable=True)
     method = CharField(required=True, nullable=False)
 
-    def __init__(self, account=None, login=None, token=None, arguments=None, method=None):
-        self.account = account
-        self.login = login
-        self.token = token
-        self.arguments = {} if not arguments else arguments
-        self.method = method
-
     @property
     def is_admin(self):
         return self.login == ADMIN_LOGIN
-
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, value):
-        self._context = value
 
 
 def check_auth(request):
