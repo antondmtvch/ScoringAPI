@@ -43,7 +43,6 @@ class BaseField(abc.ABC):
     default = None
 
     def __init__(self, required=False, nullable=False):
-        self.default = None
         self.required = required
         self.nullable = nullable
         self.data = WeakKeyDictionary()
