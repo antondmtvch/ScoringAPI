@@ -39,9 +39,8 @@ GENDERS = {
 
 
 class BaseField(abc.ABC):
-    default = None
-
     def __init__(self, required=False, nullable=False):
+        self.default = None
         self.required = required
         self.nullable = nullable
         self.data = WeakKeyDictionary()
@@ -76,10 +75,6 @@ class EmailField(CharField):
 
 
 class ArgumentsField(BaseField):
-    def __init__(self, **kwargs):
-        self.default = {}
-        super().__init__(**kwargs)
-
     @type_validator(dict)
     def validate(self, value): pass
 
@@ -107,10 +102,6 @@ class GenderField(BaseField):
 
 
 class ClientIDsField(BaseField):
-    def __init__(self, **kwargs):
-        self.default = []
-        super().__init__(**kwargs)
-
     @type_validator(list)
     def validate(self, value):
         if not all(map(lambda x: isinstance(x, int), value)):
@@ -118,24 +109,21 @@ class ClientIDsField(BaseField):
 
 
 class BaseRequest(abc.ABC):
-    def __new__(cls, **kwargs):
-        cls.attrs = [k for k, v in cls.__dict__.items() if isinstance(v, BaseField)]
-        return super(BaseRequest, cls).__new__(cls)
+    _context = None
 
-    def __init__(self, **kwargs):
-        for name in self.attrs:
-            setattr(self, name, kwargs.get(name))
-        self.context = {}
-
+    @property
+    @abc.abstractmethod
+    def context(self): pass
 
 
 class ClientsInterestsRequest(BaseRequest):
-    client_ids = ClientIDsField(required=True)
+    client_ids = ClientIDsField(required=True, nullable=False)
     date = DateField(required=False, nullable=True)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.context.update({'nclients': len(self.client_ids)})
+    def __init__(self, client_ids=None, date=None):
+        self.client_ids = [] if not client_ids else client_ids
+        self.date = date
+        self.context = {'nclients': len(self.client_ids)}
 
     @property
     def context(self):
@@ -154,10 +142,27 @@ class OnlineScoreRequest(BaseRequest):
     birthday = BirthDayField(required=False, nullable=True)
     gender = GenderField(required=False, nullable=True)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.context.update({'has': [a for a in self.attrs if getattr(self, a) not in {None, ''}]})
+    def __init__(self, first_name=None, last_name=None, email=None, phone=None, birthday=None, gender=None):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.email = email
+        self.phone = phone
+        self.birthday = birthday
+        self.gender = gender
+        self.context = {'has': [v for v in self.get_attribute_values() if v]}
         self.validate()
+
+    def get_attribute_values(self):
+        attrs = ((k, v) for k, v in self.__class__.__dict__.items() if isinstance(v, BaseField))
+        return [n for n, _ in attrs if self.__getattribute__(n) not in {None, ''}]
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
 
     def validate(self):
         if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
@@ -174,9 +179,24 @@ class MethodRequest(BaseRequest):
     arguments = ArgumentsField(required=True, nullable=True)
     method = CharField(required=True, nullable=False)
 
+    def __init__(self, account=None, login=None, token=None, arguments=None, method=None):
+        self.account = account
+        self.login = login
+        self.token = token
+        self.arguments = {} if not arguments else arguments
+        self.method = method
+
     @property
     def is_admin(self):
         return self.login == ADMIN_LOGIN
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, value):
+        self._context = value
 
 
 def check_auth(request):
