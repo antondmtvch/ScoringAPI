@@ -159,7 +159,6 @@ class OnlineScoreRequest(Request):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.context.update({'has': [name for name in self.fields if getattr(self, name) not in {None, ''}]})
-        self.validate()
 
     def validate(self):
         if not any(
@@ -198,6 +197,7 @@ def online_score_handler(request, ctx, store):
     score = 42
     if check_auth(request):
         score_request = OnlineScoreRequest(**request.arguments)
+        score_request.validate()
         ctx.update(score_request.context)
         if not request.is_admin:
             score = get_score(store=store, phone=score_request.phone, email=score_request.email,
