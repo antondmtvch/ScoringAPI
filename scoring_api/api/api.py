@@ -155,9 +155,12 @@ class OnlineScoreRequest(BaseRequest):
         self.validate()
 
     def validate(self):
-        if (self.gender in GENDERS.keys() and self.birthday) or (self.phone and self.email) \
-                or (self.first_name and self.last_name): pass
-        else:
+        if not any(
+                [
+                    (self.gender in GENDERS.keys() and self.birthday),
+                    (self.phone and self.email),
+                    (self.first_name and self.last_name)
+                ]):
             raise ValidationError(f'at least one pair must be present: phone-email or name-surname or gender-birthday '
                                   f'with non-empty values.')
 
