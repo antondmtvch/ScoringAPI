@@ -121,10 +121,15 @@ class ClientIDsField(BaseField):
             raise ValidationError(f'{repr(self.name)} field must contains only int types')
 
 
-class BaseRequest(abc.ABC):
-    def __new__(cls, **kwargs):
-        cls.attrs = [k for k, v in cls.__dict__.items() if isinstance(v, BaseField)]
-        return super(BaseRequest, cls).__new__(cls)
+class RequestMeta(type):
+    def __new__(mcs, name, bases, attrs):
+        fields = []
+        for k, v in attrs.items():
+            if isinstance(v, BaseField):
+                fields.append(k)
+        attrs['fields'] = fields
+        cls = super(RequestMeta, mcs).__new__(mcs, name, bases, attrs)
+        return cls
 
     def __init__(self, **kwargs):
         for name in self.attrs:
