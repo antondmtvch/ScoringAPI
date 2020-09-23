@@ -131,13 +131,15 @@ class RequestMeta(type):
         cls = super(RequestMeta, mcs).__new__(mcs, name, bases, attrs)
         return cls
 
+
+class Request(metaclass=RequestMeta):
     def __init__(self, **kwargs):
-        for name in self.attrs:
+        for name in self.fields:
             setattr(self, name, kwargs.get(name))
         self.context = {}
 
 
-class ClientsInterestsRequest(BaseRequest):
+class ClientsInterestsRequest(Request):
     client_ids = ClientIDsField(required=True)
     date = DateField(required=False, nullable=True)
 
@@ -146,7 +148,7 @@ class ClientsInterestsRequest(BaseRequest):
         self.context.update({'nclients': len(self.client_ids)})
 
 
-class OnlineScoreRequest(BaseRequest):
+class OnlineScoreRequest(Request):
     first_name = CharField(required=False, nullable=True)
     last_name = CharField(required=False, nullable=True)
     email = EmailField(required=False, nullable=True)
@@ -156,7 +158,7 @@ class OnlineScoreRequest(BaseRequest):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.context.update({'has': [a for a in self.attrs if getattr(self, a) not in {None, ''}]})
+        self.context.update({'has': [name for name in self.fields if getattr(self, name) not in {None, ''}]})
         self.validate()
 
     def validate(self):
@@ -170,7 +172,7 @@ class OnlineScoreRequest(BaseRequest):
                                   f'with non-empty values.')
 
 
-class MethodRequest(BaseRequest):
+class MethodRequest(Request):
     account = CharField(required=False, nullable=True)
     login = CharField(required=True, nullable=True)
     token = CharField(required=True, nullable=True)
