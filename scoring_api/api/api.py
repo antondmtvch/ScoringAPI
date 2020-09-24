@@ -40,43 +40,33 @@ GENDERS = {
 
 
 class BaseField(abc.ABC):
-    default = None
-
     def __init__(self, required=False, nullable=False):
         self.required = required
         self.nullable = nullable
         self.data = WeakKeyDictionary()
+        self.default = None
 
     def __get__(self, instance, owner):
         return self.data.get(instance, self.default)
 
     def __set__(self, instance, value):
-        self.prevalidate(value)
-        if value is not self.default:
-            self.validate(value)
         self.data[instance] = value
 
     def __set_name__(self, owner, name):
         self.name = name
 
-    def prevalidate(self, value):
-        if (value is self.default) and (not self.nullable or self.required):
-            raise ValidationError(f'field {repr(self.name)} is required')
-        elif not value and not self.nullable:
-            raise ValidationError(f'field {repr(self.name)} not be nullable')
-
     @abc.abstractmethod
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class CharField(BaseField):
     @type_validator(str)
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class EmailField(CharField):
     @email_validator
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class ArgumentsField(BaseField):
@@ -85,27 +75,27 @@ class ArgumentsField(BaseField):
         super().__init__(**kwargs)
 
     @type_validator(dict)
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class PhoneField(BaseField):
     @phone_validator
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class DateField(CharField):
     @date_validator(fmt='%d.%m.%Y')
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class BirthDayField(DateField):
     @birthday_validator(max_years=70, fmt='%d.%m.%Y')
-    def validate(self, value): pass
+    def validate_value(self, value): pass
 
 
 class GenderField(BaseField):
     @type_validator(int)
-    def validate(self, value):
+    def validate_value(self, value):
         if value not in GENDERS.keys():
             raise ValidationError(f'{repr(self.name)} field value must be 0 or 1 or 2, not {value}')
 
@@ -116,7 +106,7 @@ class ClientIDsField(BaseField):
         super().__init__(**kwargs)
 
     @type_validator(list)
-    def validate(self, value):
+    def validate_value(self, value):
         if not all(map(lambda x: isinstance(x, int), value)):
             raise ValidationError(f'{repr(self.name)} field must contains only int types')
 
@@ -138,6 +128,18 @@ class Request(metaclass=RequestMeta):
             setattr(self, name, kwargs.get(name))
         self.context = {}
 
+    def validate_fields(self):
+        for name in self.fields:
+            obj = self.__class__.__dict__[name]
+            val = getattr(self, name)
+
+            if (val is obj.default) and (not obj.nullable or obj.required):
+                raise ValidationError(f'field {repr(obj.name)} is required')
+            elif not val and not obj.nullable:
+                raise ValidationError(f'field {repr(obj.name)} not be nullable')
+            elif val is not obj.default:
+                obj.validate_value(val)
+
 
 class ClientsInterestsRequest(Request):
     client_ids = ClientIDsField(required=True)
@@ -145,7 +147,7 @@ class ClientsInterestsRequest(Request):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.context.update({'nclients': len(self.client_ids)})
+        self.context.update({'nclients': len(self.client_ids) if self.client_ids else 0})
 
 
 class OnlineScoreRequest(Request):
@@ -160,7 +162,8 @@ class OnlineScoreRequest(Request):
         super().__init__(**kwargs)
         self.context.update({'has': [name for name in self.fields if getattr(self, name) not in {None, ''}]})
 
-    def validate(self):
+    def validate_fields(self):
+        super().validate_fields()
         if not any(
                 [
                     (self.gender in GENDERS.keys() and self.birthday),
@@ -197,7 +200,7 @@ def online_score_handler(request, ctx, store):
     score = 42
     if check_auth(request):
         score_request = OnlineScoreRequest(**request.arguments)
-        score_request.validate()
+        score_request.validate_fields()
         ctx.update(score_request.context)
         if not request.is_admin:
             score = get_score(store=store, phone=score_request.phone, email=score_request.email,
@@ -211,6 +214,7 @@ def online_score_handler(request, ctx, store):
 def clients_interests_handler(request, ctx, store):
     if check_auth(request):
         interests_request = ClientsInterestsRequest(**request.arguments)
+        interests_request.validate_fields()
         ctx.update(interests_request.context)
         return {str(i): get_interests(store, i) for i in interests_request.client_ids}, OK
     return None, FORBIDDEN
@@ -225,6 +229,7 @@ def method_handler(request, ctx, store):
     if body := request.get('body'):
         try:
             request = MethodRequest(**body)
+            request.validate_fields()
             if handler := handlers.get(request.method):
                 response, code = handler(store=store, ctx=ctx, request=request)
             return response, code
