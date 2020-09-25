@@ -67,7 +67,6 @@ class RedisStore(metaclass=StoreMetaSingleton):
     def conn(self):
         return self._conn
 
-    @retry
     def set_connection(self):
         try:
             conn = redis.Redis(connection_pool=redis.ConnectionPool(**self.connection_kwargs))
