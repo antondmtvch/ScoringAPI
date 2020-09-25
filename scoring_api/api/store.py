@@ -5,7 +5,7 @@ from redis.exceptions import TimeoutError, ConnectionError
 RETRY_COUNT = 3
 
 
-def retry(method):
+def retry_connect(method):
     def wrapper(*args, **kwargs):
         error = None
         for _ in range(RETRY_COUNT):
@@ -75,18 +75,18 @@ class RedisStore(metaclass=StoreMetaSingleton):
             raise StoreConnectionError(err)
         self._conn = conn
 
-    @retry
+    @retry_connect
     def set(self, key, value):
         return self.conn.set(key, value)
 
-    @retry
+    @retry_connect
     def get(self, key):
         return self.conn.get(key)
 
-    @retry
+    @retry_connect
     def cache_get(self, key):
         return self.conn.get(key)
 
-    @retry
+    @retry_connect
     def cache_set(self, key, value, expire):
         return self.conn.set(key, value, ex=expire)
