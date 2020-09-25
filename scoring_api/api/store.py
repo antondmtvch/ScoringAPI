@@ -73,7 +73,7 @@ class RedisStore(metaclass=StoreMetaSingleton):
             conn = redis.Redis(connection_pool=redis.ConnectionPool(**self.connection_kwargs))
             conn.ping()
         except ConnectionError as err:
-            raise err
+            raise StoreConnectionError(err)
         self._conn = conn
 
     @retry
