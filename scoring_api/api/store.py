@@ -28,7 +28,9 @@ class StoreMetaSingleton(type):
 
 
 class RedisStore(metaclass=StoreMetaSingleton):
-    def __init__(self, **connection_args):
+    _conn = None
+
+    def __init__(self, **connection_kwargs):
         """
         Default connection args:
             host='localhost'
@@ -58,17 +60,21 @@ class RedisStore(metaclass=StoreMetaSingleton):
             client_name=None
             username=None
         """
-        self.connection_args = connection_args
-        self._conn = None
+        self.connection_kwargs = connection_kwargs
+        self.set_connection()
 
     @property
     def conn(self):
-        if not self._conn:
-            self.get_connection()
         return self._conn
 
-    def get_connection(self):
-        self._conn = redis.Redis(connection_pool=redis.ConnectionPool(**self.connection_args))
+    @retry
+    def set_connection(self):
+        try:
+            conn = redis.Redis(connection_pool=redis.ConnectionPool(**self.connection_kwargs))
+            conn.ping()
+        except ConnectionError as err:
+            raise err
+        self._conn = conn
 
     @retry
     def set(self, key, value):
