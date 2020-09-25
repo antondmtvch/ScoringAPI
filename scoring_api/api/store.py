@@ -2,20 +2,20 @@ import redis
 from scoring_api.api.exceptions import StoreConnectionError
 from redis.exceptions import TimeoutError, ConnectionError
 
+RETRY_COUNT = 3
 
-def retry(n):
-    def deco(method):
-        def wrapper(*args, **kwargs):
-            error = None
-            for _ in range(n):
-                try:
-                    return method(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as err:
-                    error = err
-            else:
-                raise StoreConnectionError(error)
-        return wrapper
-    return deco
+
+def retry(method):
+    def wrapper(*args, **kwargs):
+        error = None
+        for _ in range(RETRY_COUNT):
+            try:
+                return method(*args, **kwargs)
+            except (ConnectionError, TimeoutError) as err:
+                error = err
+        else:
+            raise StoreConnectionError(error)
+    return wrapper
 
 
 class StoreMetaSingleton(type):
@@ -70,18 +70,18 @@ class RedisStore(metaclass=StoreMetaSingleton):
     def get_connection(self):
         self._conn = redis.Redis(connection_pool=redis.ConnectionPool(**self.connection_args))
 
-    @retry(3)
+    @retry
     def set(self, key, value):
         return self.conn.set(key, value)
 
-    @retry(3)
+    @retry
     def get(self, key):
         return self.conn.get(key)
 
-    @retry(3)
+    @retry
     def cache_get(self, key):
         return self.conn.get(key)
 
-    @retry(3)
+    @retry
     def cache_set(self, key, value, expire):
         return self.conn.set(key, value, ex=expire)
