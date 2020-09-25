@@ -63,10 +63,6 @@ class RedisStore(metaclass=StoreMetaSingleton):
         self.connection_kwargs = connection_kwargs
         self.set_connection()
 
-    @property
-    def conn(self):
-        return self._conn
-
     def set_connection(self):
         try:
             conn = redis.Redis(connection_pool=redis.ConnectionPool(**self.connection_kwargs))
@@ -77,16 +73,16 @@ class RedisStore(metaclass=StoreMetaSingleton):
 
     @retry_connect
     def set(self, key, value):
-        return self.conn.set(key, value)
+        return self._conn.set(key, value)
 
     @retry_connect
     def get(self, key):
-        return self.conn.get(key)
+        return self._conn.get(key)
 
     @retry_connect
     def cache_get(self, key):
-        return self.conn.get(key)
+        return self._conn.get(key)
 
     @retry_connect
     def cache_set(self, key, value, expire):
-        return self.conn.set(key, value, ex=expire)
+        return self._conn.set(key, value, ex=expire)
