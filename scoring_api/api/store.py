@@ -1,4 +1,5 @@
 import redis
+from scoring_api.api.exceptions import StoreConnectionError
 from redis.exceptions import TimeoutError, ConnectionError
 
 
@@ -15,10 +16,6 @@ def retry(n):
                 raise StoreConnectionError(error)
         return wrapper
     return deco
-
-
-class StoreConnectionError(Exception):
-    pass
 
 
 class StoreMetaSingleton(type):
