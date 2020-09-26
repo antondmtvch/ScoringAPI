@@ -1,8 +1,8 @@
+import mock
 import hashlib
 import datetime
 import unittest
 
-from scoring_api.api.store import RedisStore
 from scoring_api.api import api
 from scoring_api.tests.helpers import cases
 
@@ -11,7 +11,11 @@ class TestSuite(unittest.TestCase):
     def setUp(self):
         self.context = {}
         self.headers = {}
-        self.settings = RedisStore()
+        self.settings = mock.Mock(
+            cache_get=mock.Mock(return_value=None),
+            cache_set=mock.Mock(return_value=True),
+            get=mock.Mock(return_value=['interests_val_1', 'interests_val_2', 'interests_val_3']),
+        )
 
     def get_response(self, request):
         return api.method_handler({"body": request, "headers": self.headers}, self.context, self.settings)
