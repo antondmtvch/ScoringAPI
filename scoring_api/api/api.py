@@ -156,7 +156,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     router = {
         "method": method_handler
     }
-    store = None
+    store = RedisStore()
 
     @staticmethod
     def get_request_id(headers):
