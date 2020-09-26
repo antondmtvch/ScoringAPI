@@ -2,6 +2,7 @@ import hashlib
 import datetime
 import unittest
 
+from scoring_api.api.store import RedisStore
 from scoring_api.api import api
 from scoring_api.tests.helpers import cases
 
@@ -10,7 +11,7 @@ class TestSuite(unittest.TestCase):
     def setUp(self):
         self.context = {}
         self.headers = {}
-        self.settings = {}
+        self.settings = RedisStore()
 
     def get_response(self, request):
         return api.method_handler({"body": request, "headers": self.headers}, self.context, self.settings)
