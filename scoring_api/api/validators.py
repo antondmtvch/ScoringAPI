@@ -3,7 +3,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 from scoring_api.api.exceptions import ValidationError
 
-__all__ = ['type_validator', 'email_validator', 'phone_validator', 'date_validator', 'birthday_validator']
+__all__ = ['type_validator', 'email_validator', 'phone_validator', 'date_validator']
 
 
 def type_validator(*types):
@@ -49,22 +49,6 @@ def date_validator(fmt):
                 datetime.strptime(value, fmt)
             except ValueError:
                 raise ValidationError(f'invalid date format for {repr(self.name)} field, expected {fmt}')
-            return func(self, value)
-        return wrapper
-    return validator
-
-
-def birthday_validator(max_years, fmt):
-    def validator(func):
-        @wraps(func)
-        @date_validator(fmt)
-        def wrapper(self, value):
-            dt, now = datetime.strptime(value, fmt), datetime.now()
-            if dt + timedelta(days=365 * max_years) < now:
-                raise ValidationError(f'invalid value for {repr(self.name)} field, age over {max_years}')
-            elif dt > now:
-                raise ValidationError(
-                    f'invalid value for {repr(self.name)} field, value must be less {now.strftime(fmt)}')
             return func(self, value)
         return wrapper
     return validator
