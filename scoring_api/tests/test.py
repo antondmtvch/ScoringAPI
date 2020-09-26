@@ -1,20 +1,9 @@
 import hashlib
 import datetime
-import functools
 import unittest
 
 from scoring_api.api import api
-
-
-def cases(cases):
-    def decorator(f):
-        @functools.wraps(f)
-        def wrapper(*args):
-            for c in cases:
-                new_args = args + (c if isinstance(c, tuple) else (c,))
-                f(*new_args)
-        return wrapper
-    return decorator
+from scoring_api.tests.helpers import cases
 
 
 class TestSuite(unittest.TestCase):
