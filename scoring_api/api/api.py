@@ -1,10 +1,9 @@
-import abc
 import json
-import datetime
 import logging
 import hashlib
 import uuid
 
+from datetime import datetime
 from optparse import OptionParser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from scoring_api.api.scoring import get_interests, get_score
@@ -192,7 +191,6 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
         else:
             r = {"error": response or ERRORS.get(code, "Unknown Error"), "code": code}
         context.update(r)
-        logging.info(context)
         self.wfile.write(json.dumps(r).encode('utf-8'))
         return
 
