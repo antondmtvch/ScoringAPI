@@ -11,7 +11,7 @@ def cases(_cases):
                 try:
                     f(*new_args)
                 except Exception as err:
-                    print(new_args)  # todo: change to logger
+                    logging.info(new_args)
                     raise err
         return wrapper
     return decorator
