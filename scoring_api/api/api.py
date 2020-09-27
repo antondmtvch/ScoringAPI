@@ -78,9 +78,9 @@ class OnlineScoreRequest(Request):
         super().validate_fields()
         if not any(
                 [
-                    (self.gender in GENDERS.keys() and self.birthday),
-                    (self.phone and self.email),
-                    (self.first_name and self.last_name)
+                    bool((self.gender in GENDERS.keys() and self.birthday)),
+                    bool((self.phone and self.email)),
+                    bool((self.first_name and self.last_name))
                 ]):
             raise ValidationError(f'at least one pair must be present: phone-email or name-surname or gender-birthday '
                                   f'with non-empty values.')
