@@ -78,18 +78,22 @@ class RedisStore(metaclass=StoreMetaSingleton):
             raise StoreConnectionError(err)
         self._conn = conn
 
-    @retry_connect(raise_on_failure=True)
-    def set(self, key, value):
-        return self._conn.set(key, value)
+    @property
+    def conn(self):
+        return self._conn
+
+    @conn.setter
+    def conn(self, value):
+        self._conn = value
 
     @retry_connect(raise_on_failure=True)
     def get(self, key):
-        return self._conn.get(key)
+        return self.conn.smembers(key)
 
     @retry_connect(raise_on_failure=False)
     def cache_get(self, key):
-        return self._conn.get(key)
+        return self.conn.get(key)
 
     @retry_connect(raise_on_failure=False)
     def cache_set(self, key, value, expire):
-        return self._conn.set(key, value, ex=expire)
+        return self.conn.set(key, value, ex=expire)
