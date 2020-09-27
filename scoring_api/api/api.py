@@ -163,7 +163,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     router = {
         "method": method_handler
     }
-    store = RedisStore()
+    store = RedisStore(socket_connect_timeout=3)
 
     @staticmethod
     def get_request_id(headers):
