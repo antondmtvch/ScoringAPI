@@ -1,18 +1,16 @@
-import abc
 import json
-import datetime
 import logging
 import hashlib
 import uuid
 
+from datetime import datetime
 from optparse import OptionParser
-from weakref import WeakKeyDictionary
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from scoring_api.api.scoring import get_interests, get_score
-from scoring_api.api.validators import (
-    type_validator, email_validator, phone_validator, date_validator, birthday_validator
-)
 from scoring_api.api.exceptions import ValidationError
+from scoring_api.api.store import RedisStore
+from scoring_api.api.fields import BaseField, CharField, DateField, ClientIDsField, EmailField, PhoneField, \
+    BirthDayField, GenderField, ArgumentsField, GENDERS
 
 SALT, ADMIN_LOGIN, ADMIN_SALT = 'Otus', 'admin', '42'
 
@@ -30,85 +28,6 @@ ERRORS = {
     INVALID_REQUEST: "Invalid Request",
     INTERNAL_ERROR: "Internal Server Error",
 }
-UNKNOWN, MALE, FEMALE = 0, 1, 2
-
-GENDERS = {
-    UNKNOWN: "unknown",
-    MALE: "male",
-    FEMALE: "female",
-}
-
-
-class BaseField(abc.ABC):
-    def __init__(self, required=False, nullable=False):
-        self.required = required
-        self.nullable = nullable
-        self.data = WeakKeyDictionary()
-        self.default = None
-
-    def __get__(self, instance, owner):
-        return self.data.get(instance, self.default)
-
-    def __set__(self, instance, value):
-        self.data[instance] = value
-
-    def __set_name__(self, owner, name):
-        self.name = name
-
-    @abc.abstractmethod
-    def validate_value(self, value): pass
-
-
-class CharField(BaseField):
-    @type_validator(str)
-    def validate_value(self, value): pass
-
-
-class EmailField(CharField):
-    @email_validator
-    def validate_value(self, value): pass
-
-
-class ArgumentsField(BaseField):
-    def __init__(self, **kwargs):
-        self.default = {}
-        super().__init__(**kwargs)
-
-    @type_validator(dict)
-    def validate_value(self, value): pass
-
-
-class PhoneField(BaseField):
-    @phone_validator
-    def validate_value(self, value): pass
-
-
-class DateField(CharField):
-    @date_validator(fmt='%d.%m.%Y')
-    def validate_value(self, value): pass
-
-
-class BirthDayField(DateField):
-    @birthday_validator(max_years=70, fmt='%d.%m.%Y')
-    def validate_value(self, value): pass
-
-
-class GenderField(BaseField):
-    @type_validator(int)
-    def validate_value(self, value):
-        if value not in GENDERS.keys():
-            raise ValidationError(f'{repr(self.name)} field value must be 0 or 1 or 2, not {value}')
-
-
-class ClientIDsField(BaseField):
-    def __init__(self, **kwargs):
-        self.default = []
-        super().__init__(**kwargs)
-
-    @type_validator(list)
-    def validate_value(self, value):
-        if not all(map(lambda x: isinstance(x, int), value)):
-            raise ValidationError(f'{repr(self.name)} field must contains only int types')
 
 
 class RequestMeta(type):
@@ -131,14 +50,7 @@ class Request(metaclass=RequestMeta):
     def validate_fields(self):
         for name in self.fields:
             obj = self.__class__.__dict__[name]
-            val = getattr(self, name)
-
-            if (val is obj.default) and (not obj.nullable or obj.required):
-                raise ValidationError(f'field {repr(obj.name)} is required')
-            elif not val and not obj.nullable:
-                raise ValidationError(f'field {repr(obj.name)} not be nullable')
-            elif val is not obj.default:
-                obj.validate_value(val)
+            obj.validate(getattr(self, name))
 
 
 class ClientsInterestsRequest(Request):
@@ -166,9 +78,9 @@ class OnlineScoreRequest(Request):
         super().validate_fields()
         if not any(
                 [
-                    (self.gender in GENDERS.keys() and self.birthday),
-                    (self.phone and self.email),
-                    (self.first_name and self.last_name)
+                    bool((self.gender in GENDERS.keys() and self.birthday)),
+                    bool((self.phone and self.email)),
+                    bool((self.first_name and self.last_name))
                 ]):
             raise ValidationError(f'at least one pair must be present: phone-email or name-surname or gender-birthday '
                                   f'with non-empty values.')
@@ -188,7 +100,7 @@ class MethodRequest(Request):
 
 def check_auth(request):
     if request.is_admin:
-        digest = hashlib.sha512((datetime.datetime.now().strftime("%Y%m%d%H") + ADMIN_SALT).encode('utf-8')).hexdigest()
+        digest = hashlib.sha512((datetime.now().strftime("%Y%m%d%H") + ADMIN_SALT).encode('utf-8')).hexdigest()
     else:
         digest = hashlib.sha512((request.account + request.login + SALT).encode('utf-8')).hexdigest()
     if digest == request.token:
@@ -243,7 +155,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     router = {
         "method": method_handler
     }
-    store = None
+    store = RedisStore()
 
     @staticmethod
     def get_request_id(headers):
@@ -279,7 +191,6 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
         else:
             r = {"error": response or ERRORS.get(code, "Unknown Error"), "code": code}
         context.update(r)
-        logging.info(context)
         self.wfile.write(json.dumps(r).encode('utf-8'))
         return
 
