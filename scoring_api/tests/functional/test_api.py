@@ -13,7 +13,7 @@ class TestSuite(unittest.TestCase):
         self.settings = Mock(
             cache_get=Mock(return_value=None),
             cache_set=Mock(return_value=True),
-            get=Mock(return_value=['music', 'books', 'movies']),
+            get=Mock(return_value=[b'music', b'books', b'movies']),
         )
 
     def get_response(self, request):
