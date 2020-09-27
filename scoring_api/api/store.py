@@ -69,7 +69,6 @@ class RedisStore(metaclass=StoreMetaSingleton):
             username=None
         """
         self.connection_kwargs = connection_kwargs
-        self.set_connection()
 
     def set_connection(self):
         try:
