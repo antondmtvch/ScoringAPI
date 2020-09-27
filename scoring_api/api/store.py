@@ -1,21 +1,29 @@
 import redis
+from time import sleep
 from scoring_api.api.exceptions import StoreConnectionError
 from redis.exceptions import TimeoutError, ConnectionError
 
 RETRY_COUNT = 3
+RETRY_DELAY = 0.5
 
 
-def retry_connect(method):
-    def wrapper(*args, **kwargs):
-        error = None
-        for _ in range(RETRY_COUNT):
-            try:
-                return method(*args, **kwargs)
-            except (ConnectionError, TimeoutError) as err:
-                error = err
-        else:
-            raise StoreConnectionError(error)
-    return wrapper
+def retry_connect(raise_on_failure=True):
+    def decorator(method):
+        def wrapper(*args, **kwargs):
+            error = None
+            for _ in range(RETRY_COUNT):
+                try:
+                    return method(*args, **kwargs)
+                except (ConnectionError, TimeoutError) as err:
+                    error = err
+                    sleep(RETRY_DELAY)
+            else:
+                if raise_on_failure:
+                    raise StoreConnectionError(error)
+                else:
+                    return None
+        return wrapper
+    return decorator
 
 
 class StoreMetaSingleton(type):
@@ -71,18 +79,18 @@ class RedisStore(metaclass=StoreMetaSingleton):
             raise StoreConnectionError(err)
         self._conn = conn
 
-    @retry_connect
+    @retry_connect(raise_on_failure=True)
     def set(self, key, value):
         return self._conn.set(key, value)
 
-    @retry_connect
+    @retry_connect(raise_on_failure=True)
     def get(self, key):
         return self._conn.get(key)
 
-    @retry_connect
+    @retry_connect(raise_on_failure=False)
     def cache_get(self, key):
         return self._conn.get(key)
 
-    @retry_connect
+    @retry_connect(raise_on_failure=False)
     def cache_set(self, key, value, expire):
         return self._conn.set(key, value, ex=expire)

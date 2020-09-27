@@ -59,7 +59,11 @@ class ClientsInterestsRequest(Request):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.context.update({'nclients': len(self.client_ids) if self.client_ids else 0})
+        self.update_context()
+
+    def update_context(self):
+        nclients = len(self.client_ids) if self.client_ids else 0
+        self.context.update({'nclients': nclients})
 
 
 class OnlineScoreRequest(Request):
@@ -72,7 +76,7 @@ class OnlineScoreRequest(Request):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.context.update({'has': [name for name in self.fields if getattr(self, name) not in {None, ''}]})
+        self.update_context()
 
     def validate_fields(self):
         super().validate_fields()
@@ -84,6 +88,10 @@ class OnlineScoreRequest(Request):
                 ]):
             raise ValidationError(f'at least one pair must be present: phone-email or name-surname or gender-birthday '
                                   f'with non-empty values.')
+
+    def update_context(self):
+        fields = [name for name in self.fields if getattr(self, name) not in {None, ''}]
+        self.context.update({'has': fields})
 
 
 class MethodRequest(Request):
