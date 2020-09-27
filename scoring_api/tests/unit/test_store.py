@@ -10,9 +10,10 @@ class StoreTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.storage = RedisStore()
-        cls.storage._conn = Mock(
+        cls.storage.conn = Mock(
+            smembers=Mock(side_effect=ConnectionError),
             get=Mock(side_effect=ConnectionError),
-            set=Mock(side_effect=TimeoutError),
+            set=Mock(side_effect=ConnectionError),
         )
 
     def test_singleton_object(self):
@@ -23,8 +24,6 @@ class StoreTestCase(unittest.TestCase):
     def test_storage_connection_error(self):
         with self.assertRaises(StoreConnectionError):
             self.storage.get('key')
-        with self.assertRaises(StoreConnectionError):
-            self.storage.set('key', 'value')
 
     @patch('scoring_api.api.store.RETRY_DELAY', 0)
     @patch('scoring_api.api.store.RETRY_COUNT', 1)
