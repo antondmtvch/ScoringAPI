@@ -13,7 +13,7 @@ class StoreTestCase(unittest.TestCase):
         cls.storage.conn = Mock(
             smembers=Mock(side_effect=ConnectionError),
             get=Mock(side_effect=ConnectionError),
-            set=Mock(side_effect=ConnectionError),
+            set=Mock(side_effect=TimeoutError),
         )
 
     def test_singleton_object(self):

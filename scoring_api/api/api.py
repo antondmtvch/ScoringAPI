@@ -154,7 +154,7 @@ def method_handler(request, ctx, store):
                 response, code = handler(store=store, ctx=ctx, request=request)
             return response, code
         except ValidationError as err:
-            logging.exception(err)
+            logging.debug(err)
             return str(err), code
     return response, code
 

@@ -15,8 +15,7 @@ from scoring_api.api.store import RedisStore
 from scoring_api.api.scoring import get_interests
 from scoring_api.tests.helpers import cases
 
-logging.basicConfig(level=logging.INFO,
-                    format='[%(asctime)s] %(levelname).1s %(message)s', datefmt='%Y.%m.%d %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 
 def find_free_port():
@@ -34,14 +33,14 @@ class IntegrationTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        logging.info(f'Starting redis server')
+        logger.info(f'Starting redis server')
 
         cls.rds_proc = subprocess.Popen(['redis-server', '--port', '6379'])
-        cls.redis = RedisStore(port=6379)
+        cls.redis = RedisStore(port=6379, db=1)
         cls.redis.set_connection()
 
         cls.port = find_free_port()
-        logging.info(f'Starting api http server on {cls.port}')
+        logger.info(f'Starting http server on {cls.port}')
 
         server = HTTPServer(("localhost", cls.port), MainHTTPHandler)
         cls.api_proc = threading.Thread(target=server.serve_forever)
@@ -50,7 +49,7 @@ class IntegrationTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        logging.info(f'Terminating redis server')
+        logger.info(f'Terminating redis server')
         cls.rds_proc.terminate()
         cls.rds_proc.wait()
 
