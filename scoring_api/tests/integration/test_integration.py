@@ -65,11 +65,14 @@ class IntegrationTestCase(unittest.TestCase):
 
     @staticmethod
     def create_score_key(**kwargs):
+        birthday = kwargs.get('birthday')
+        phone = kwargs.get('phone')
+
         key_parts = [
             kwargs.get('first_name', ''),
             kwargs.get('last_name', ''),
-            str(kwargs.get('phone')) if kwargs.get('phone') else '',
-            datetime.strptime(kwargs.get('birthday'), '%d.%m.%Y').strftime('%Y%m%d') if kwargs.get('birthday') else '',
+            str(phone) if phone else '',
+            datetime.strptime(birthday, '%d.%m.%Y').strftime('%Y%m%d') if birthday else '',
         ]
         return 'uid:' + hashlib.md5(''.join(key_parts).encode('utf-8')).hexdigest()
 
