@@ -36,7 +36,7 @@ class StoreMetaSingleton(type):
 
 
 class RedisStore(metaclass=StoreMetaSingleton):
-    _conn = None
+    conn = None
 
     def __init__(self, **connection_kwargs):
         """
@@ -76,15 +76,7 @@ class RedisStore(metaclass=StoreMetaSingleton):
             conn.ping()
         except ConnectionError as err:
             raise StoreConnectionError(err)
-        self._conn = conn
-
-    @property
-    def conn(self):
-        return self._conn
-
-    @conn.setter
-    def conn(self, value):
-        self._conn = value
+        self.conn = conn
 
     @retry_connect(raise_on_failure=True)
     def get(self, key):
