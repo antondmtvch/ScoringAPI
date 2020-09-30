@@ -26,16 +26,7 @@ def retry_connect(raise_on_failure=True):
     return decorator
 
 
-class StoreMetaSingleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(StoreMetaSingleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class RedisStore(metaclass=StoreMetaSingleton):
+class RedisStore:
     conn = None
 
     def __init__(self, **connection_kwargs):
