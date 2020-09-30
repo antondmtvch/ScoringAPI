@@ -78,5 +78,5 @@ class RedisStore:
         return self.conn.get(key)
 
     @retry_connect(raise_on_failure=False)
-    def cache_set(self, key, value, expire):
-        return self.conn.set(key, value, ex=expire)
+    def cache_set(self, key, value, expire_ms):
+        return self.conn.set(key, value, px=expire_ms)
