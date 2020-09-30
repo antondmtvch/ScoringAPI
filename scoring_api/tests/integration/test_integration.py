@@ -3,7 +3,6 @@ import logging
 import subprocess
 
 from unittest.mock import Mock, patch
-from time import sleep
 from redis.exceptions import ConnectionError, TimeoutError
 
 from scoring_api.api.exceptions import StoreConnectionError
