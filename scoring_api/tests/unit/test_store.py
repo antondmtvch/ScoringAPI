@@ -16,9 +16,6 @@ class StoreTestCase(unittest.TestCase):
             set=Mock(side_effect=TimeoutError),
         )
 
-    def test_singleton_object(self):
-        self.assertIs(self.storage, RedisStore())
-
     @patch('scoring_api.api.store.RETRY_DELAY', 0)
     @patch('scoring_api.api.store.RETRY_COUNT', 1)
     def test_storage_connection_error(self):
@@ -29,7 +26,7 @@ class StoreTestCase(unittest.TestCase):
     @patch('scoring_api.api.store.RETRY_COUNT', 1)
     def test_cache_connection_error(self):
         self.assertIsNone(self.storage.cache_get('key'))
-        self.assertIsNone(self.storage.cache_set('key', 'value', expire=0))
+        self.assertIsNone(self.storage.cache_set('key', 'value', expire_ms=0))
 
 
 if __name__ == '__main__':
